@@ -1,0 +1,16 @@
+{
+  "name": "vynqo",
+  "version": "1.0.0",
+  "description": "a backend",
+  "keywords": [
+    "javascript",
+    "backend"
+  ],
+  "license": "ISC",
+  "author": "Md Kaif Alam",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
