@@ -5,4 +5,5 @@ class apiResponse {
         this.message = message;
         this.sucess = statuscode < 400;
     }
-} 
+}
+export { apiResponse }
