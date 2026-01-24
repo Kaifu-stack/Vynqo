@@ -8,13 +8,13 @@ import { apiResponse } from "../utils/apiResponse.js";
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
-        const acessToken = user.generateAccessToken()
+        const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
 
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
 
-        return { acessToken, refreshToken }
+        return { accessToken, refreshToken }
     } catch (error) {
         throw new apiError(500, "something went wrong while genrating acess and refresh tokens")
     }
@@ -99,10 +99,10 @@ const loginuser = asynchandler(async (req, res) => {
     const { email, username, password } = req.body
 
     if (!username && !email) {
-        throw new apiError(400, "username or password is required ")
+        throw new apiError(400, "username or email is required ")
 
     }
-    const user = User.findOne({
+    const user = await User.findOne({
         $or: [{ username }, { email }]
     })
 
@@ -110,29 +110,28 @@ const loginuser = asynchandler(async (req, res) => {
         throw new apiError(404, "user does not exist")
     }
 
-    const ispasswordvalid = await user.isPasswordCorrect
-        (password)
+    const ispasswordvalid = await user.isPasswordCorrect(password)
 
     if (!ispasswordvalid) {
         throw new apiError(401, "Invalid user Credentials")
     }
 
-    const { acessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
     const loggedInUser = await User.findById(user._id).
-        select("-password ,-refreshToken")
+        select("-password -refreshToken")
 
     const options = {
         httpOnly: true,
         secure: true
     }
 
-    return res.status(200).cookie("acessToken", acessToken, options)
+    return res.status(200).cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
         .json(
             new apiResponse(
                 200, {
-                user: loggedInUser, acessToken, refreshToken
+                user: loggedInUser, accessToken, refreshToken
 
             },
                 "User logged in suceesfully"
@@ -161,7 +160,7 @@ const logoutuser = asynchandler(async (req, res) => {
 
     return res
         .status(200)
-        .clearCookie("acessToken", options)
+        .clearCookie("accessToken", options)
         .clearCookie("refreshToken", options)
         .json(new apiResponse(200, {}, " User Logged Out"))
 })
