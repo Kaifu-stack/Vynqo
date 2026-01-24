@@ -98,7 +98,7 @@ const loginuser = asynchandler(async (req, res) => {
 
     const { email, username, password } = req.body
 
-    if (!username || !email) {
+    if (!username && !email) {
         throw new apiError(400, "username or password is required ")
 
     }
@@ -143,7 +143,27 @@ const loginuser = asynchandler(async (req, res) => {
 })
 
 const logoutuser = asynchandler(async (req, res) => {
+    await User.findByIdAndUpdate(
+        req.user._id, {
+        $set: {
+            refreshToken: undefined
+        }
+    },
+        {
+            new: true
+        }
+    )
 
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+        .status(200)
+        .clearCookie("acessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new apiResponse(200, {}, " User Logged Out"))
 })
 export {
     registerUser,

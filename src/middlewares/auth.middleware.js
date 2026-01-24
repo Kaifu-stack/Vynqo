@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken"
 import { asynchandler } from "../utils/asynchandler";
 import { User } from "../models/user.model"
 
-export const verifyJWT = asynchandler(async (req, res, next) => {
+export const verifyJWT = asynchandler(async (req, _, next) => {
     try {
         const token = req.cookie?.acessToken || req.header
             ("Authorization")?.replace("Bearer ", "")
