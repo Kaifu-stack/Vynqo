@@ -214,6 +214,9 @@ const changeCurrentPassword = asynchandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
 
     const user = await User.findById(req.user?._id)
+    if (!user) {
+        throw new apiError(401, "Unauthorized user");
+    }
     const ispasswordcorrect = await user.isPasswordCorrect(oldPassword)
 
     if (!ispasswordcorrect) {
@@ -221,7 +224,7 @@ const changeCurrentPassword = asynchandler(async (req, res) => {
     }
 
     user.password = newPassword
-    await user.save({ validateBeforeSave: FontFaceSetLoadEvent })
+    await user.save({ validateBeforeSave: true })
 
     return res.status(200)
         .json(
@@ -264,16 +267,35 @@ const updateuserAvatar = asynchandler(async (req, res) => {
         throw new apiError(400, "Avatar File is Missing")
     }
 
+    // get current user
+    const currentUser = await User.findById(req.user?._id);
+    if (!currentUser) {
+        throw new apiError(401, "Unauthorized user");
+    }
+    const oldAvatarPublicId = currentUser.avatar?.public_id;
+    console.log("Avatar local path:", avatarLocalPath);
+
     const avatar = await uploadToCloudinary(avatarLocalPath)
 
-    if (!avatar.url) {
+    if (!avatar?.url || !avatar?.public_id) {
         throw new apiError(400, "Error while uploading on avatar")
     }
 
-    await User.findByIdAndUpdate(
+    //  Delete old avatar (if exists)
+    if (oldAvatarPublicId) {
+        await deleteFromCloudinary(oldAvatarPublicId);
+    }
+
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
-            $set: avatar.url
+            $set: {
+                avatar: {
+                    url: avatar.url,
+                    public_id: avatar.public_id
+                }
+
+            }
         },
         { new: true }
     ).select("-password")
