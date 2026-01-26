@@ -4,7 +4,8 @@ import { apiError } from "../utils/apiError.js"
 import { User } from "../models/user.model.js"
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -315,16 +316,21 @@ const updateuserCoverImage = asynchandler(async (req, res) => {
         throw new apiError(400, "CoverImage is Missing")
     }
 
-    const CoverImage = await uploadToCloudinary(coverImageLocalPath)
+    const coverImage = await uploadToCloudinary(coverImageLocalPath)
 
-    if (!coverImage.url) {
+    if (!coverImage.url || !coverImage?.public_id) {
         throw new apiError(400, "Error while uploading coverImage")
     }
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
-            $set: coverImage.url
+            $set: {
+                coverImage: {
+                    url: coverImage.url,
+                    public_id: coverImage.public_id
+                }
+            }
         },
         { new: true }
     ).select("-password")
@@ -375,7 +381,11 @@ const getUserChannelProfile = asynchandler(async (req, res) => {
                 },
                 isSubscribed: {
                     $cond: {
-                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+                        if: {
+                            $in: [req.user?._id
+                                ? new mongoose.Types.ObjectId(req.user._id)
+                                : null, "$subscribers.subscriber"]
+                        },
                         then: true,
                         else: false
                     }
