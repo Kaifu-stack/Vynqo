@@ -344,6 +344,7 @@ const updateuserCoverImage = asynchandler(async (req, res) => {
 
 const getUserChannelProfile = asynchandler(async (req, res) => {
     const { username } = req.params
+    console.log("USERNAME PARAM:", req.params.username);
 
     if (!username?.trim()) {
         throw new apiError(400, "username is missing")
@@ -383,8 +384,7 @@ const getUserChannelProfile = asynchandler(async (req, res) => {
                     $cond: {
                         if: {
                             $in: [req.user?._id
-                                ? new mongoose.Types.ObjectId(req.user._id)
-                                : null, "$subscribers.subscriber"]
+                                , "$subscribers.subscriber"]
                         },
                         then: true,
                         else: false
@@ -417,7 +417,7 @@ const getWatchHistory = asynchandler(async (req, res) => {
     const user = await User.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.Object_ObjectId(req.user._id)
+                _id: new mongoose.Types.ObjectId(req.user._id)
             }
         },
         {
