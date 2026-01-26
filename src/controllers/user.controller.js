@@ -231,7 +231,7 @@ const changeCurrentPassword = asynchandler(async (req, res) => {
 
 const getCurrentUser = asynchandler(async (req, res) => {
     return res.status(200)
-        .json(200, req.user, "Current use fetched Successfully ")
+        .json(new apiResponse(200, req.user, "Current use fetched Successfully "))
 })
 const updateAccountDetails = asynchandler(async (req, res) => {
     const { fullname, email } = req.body
@@ -240,7 +240,7 @@ const updateAccountDetails = asynchandler(async (req, res) => {
         throw new apiError(400, "All fields are required ")
     }
 
-    const user = User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
