@@ -8,8 +8,59 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import fs from "fs";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-    //TODO: get all videos based on query, sort, pagination
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+    const matchStage = {
+        isPublished: true
+    };
+    const options = {
+        page: parseInt(page),
+        limit: parseInt(limit)
+    };
+    if (query) {
+        matchStage.$or = [
+            { title: { $regex: query, $options: "i" } },
+            { description: { $regex: query, $options: "i" } }
+        ];
+    }
+    // Filter by user
+    if (userId) {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            throw new apiError(400, "Invalid user ID");
+        }
+        matchStage.owner = new mongoose.Types.ObjectId(userId);
+    }
+    const sortStage = {
+        [sortBy]: sortType === "asc" ? 1 : -1
+    };
+
+    const aggregate = Video.aggregate([
+        { $match: matchStage },
+
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        { $unwind: "$owner" },
+
+        { $sort: sortStage }
+    ]);
+    const videos = await Video.aggregatePaginate(aggregate, options);
+
+    return res.status(200).json(
+        new apiResponse(200, videos, "Videos fetched successfully")
+    );
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
