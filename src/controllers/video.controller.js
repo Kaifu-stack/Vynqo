@@ -115,8 +115,38 @@ const updateVideo = asyncHandler(async (req, res) => {
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: delete video
+    const { videoId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new apiError(400, "Invalid video ID");
+    }
+    const video = await Video.findById(videoId);
+
+    if (!video) {
+        throw new apiError(404, "Video not found");
+    }
+
+    if (video.owner.toString() !== req.user._id.toString()) {
+        throw new apiError(403, "You are not allowed to delete this video");
+    }
+
+    try {
+        if (video.videoFile?.public_id) {
+            await deleteFromCloudinary(video.videoFile.public_id);
+        }
+        if (video.thumbnail?.public_id) {
+            await deleteFromCloudinary(video.thumbnail.public_id);
+        }
+    } catch (error) {
+        throw new apiError(500, "Error deleting video from Cloudinary");
+    }
+
+    // Delete the DB
+    await video.deleteOne();
+
+    return res.status(200).json(
+        new apiResponse(200, null, "Video deleted successfully")
+    );
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
