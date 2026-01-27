@@ -5,7 +5,7 @@ import { apiError, ApiError } from "../utils/apiError.js"
 import { apiResponse, ApiResponse } from "../utils/apiResponse.js"
 import { asyncHandler } from "../utils/asynchandler.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
-
+import fs from "fs";
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
@@ -13,9 +13,50 @@ const getAllVideos = asyncHandler(async (req, res) => {
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
-    const { title, description } = req.body
-    // TODO: get video, upload to cloudinary, create video
-})
+    const { title, description } = req.body;
+
+    if (!title?.trim() || !description?.trim()) {
+        throw new apiError(400, "Title and description are required");
+    }
+
+    // Check files
+    if (!req.files?.video || !req.files?.thumbnail) {
+        throw new apiError(400, "Video file and thumbnail are required");
+    }
+
+    const videoLocalPath = req.files.video[0].path;
+    const thumbnailLocalPath = req.files.thumbnail[0].path;
+
+    // Upload to cloudinary
+    const uploadedVideo = await uploadOnCloudinary(videoLocalPath);
+    const uploadedThumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+    fs.unlinkSync(videoLocalPath);
+    fs.unlinkSync(thumbnailLocalPath);
+
+    if (!uploadedVideo || !uploadedThumbnail) {
+        throw new apiError(500, "Cloudinary upload failed");
+    }
+
+    // Create video document
+    const video = await Video.create({
+        title,
+        description,
+        videoFile: {
+            url: uploadedVideo.url,
+            public_id: uploadedVideo.public_id
+        },
+        thumbnail: {
+            url: uploadedThumbnail.url,
+            public_id: uploadedThumbnail.public_id
+        },
+        duration: uploadedVideo.duration,
+        owner: req.user._id
+    });
+
+    return res.status(201).json(
+        new apiResponse(201, video, "Video published successfully")
+    );
+});
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
@@ -49,7 +90,7 @@ const updateVideo = asyncHandler(async (req, res) => {
         throw new apiError(403, "You are not allowed to update this video");
     }
     if (thumbnailLocalPath) {
-        const thumbnail = await uploadToCloudinary(thumbnailLocalPath);
+        const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
     }
 
     if (!thumbnail?.url || !thumbnail?.public_id) {
