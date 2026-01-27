@@ -1,13 +1,13 @@
 import mongoose, { isValidObjectId } from "mongoose"
 import { Video } from "../models/video.model.js"
 import { User } from "../models/user.model.js"
-import { apiError, ApiError } from "../utils/apiError.js"
-import { apiResponse, ApiResponse } from "../utils/apiResponse.js"
-import { asyncHandler } from "../utils/asynchandler.js"
-import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
+import { apiError } from "../utils/apiError.js"
+import { apiResponse } from "../utils/apiResponse.js"
+import { asynchandler } from "../utils/asynchandler.js"
+import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 import fs from "fs";
 
-const getAllVideos = asyncHandler(async (req, res) => {
+const getAllVideos = asynchandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
     const matchStage = {
         isPublished: true
@@ -66,7 +66,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     );
 })
 
-const publishAVideo = asyncHandler(async (req, res) => {
+const publishAVideo = asynchandler(async (req, res) => {
     const { title, description } = req.body;
 
     if (!title?.trim() || !description?.trim()) {
@@ -82,8 +82,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const thumbnailLocalPath = req.files.thumbnail[0].path;
 
     // Upload to cloudinary
-    const uploadedVideo = await uploadOnCloudinary(videoLocalPath);
-    const uploadedThumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+    const uploadedVideo = await uploadToCloudinary(videoLocalPath);
+    const uploadedThumbnail = await uploadToCloudinary(thumbnailLocalPath);
     fs.unlinkSync(videoLocalPath);
     fs.unlinkSync(thumbnailLocalPath);
 
@@ -112,7 +112,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     );
 });
 
-const getVideoById = asyncHandler(async (req, res) => {
+const getVideoById = asynchandler(async (req, res) => {
     const { videoId } = req.params
     if (!videoId) {
         throw new apiError(400, "video Id is required")
@@ -127,7 +127,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     );
 })
 
-const updateVideo = asyncHandler(async (req, res) => {
+const updateVideo = asynchandler(async (req, res) => {
     const { videoId } = req.params
     const { title, description } = req.body
     const thumbnailLocalPath = req.file?.path;
@@ -146,7 +146,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     let thumbnail;
 
     if (thumbnailLocalPath) {
-        thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+        thumbnail = await uploadToCloudinary(thumbnailLocalPath);
     }
 
     if (!thumbnail?.url || !thumbnail?.public_id) {
@@ -170,7 +170,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     );
 })
 
-const deleteVideo = asyncHandler(async (req, res) => {
+const deleteVideo = asynchandler(async (req, res) => {
     const { videoId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(videoId)) {
@@ -205,7 +205,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     );
 })
 
-const togglePublishStatus = asyncHandler(async (req, res) => {
+const togglePublishStatus = asynchandler(async (req, res) => {
     const { videoId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new apiError(400, "Invalid video ID");

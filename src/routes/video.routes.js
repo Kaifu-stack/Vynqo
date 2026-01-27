@@ -10,6 +10,7 @@ import {
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
 import multer from "multer";
+import { upload } from "../middlewares/multer.middleware.js";
 router.route("/getAll-videos").get(getAllVideos);
 
 router.route("/publish-video").post(
