@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js"
 import { apiError, ApiError } from "../utils/apiError.js"
 import { apiResponse, ApiResponse } from "../utils/apiResponse.js"
 import { asyncHandler } from "../utils/asynchandler.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 import fs from "fs";
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -29,9 +29,12 @@ const getAllVideos = asyncHandler(async (req, res) => {
         }
         matchStage.owner = new mongoose.Types.ObjectId(userId);
     }
+    const sortField = sortBy || "createdAt";
+
     const sortStage = {
-        [sortBy]: sortType === "asc" ? 1 : -1
+        [sortField]: sortType === "asc" ? 1 : -1
     };
+
 
     const aggregate = Video.aggregate([
         { $match: matchStage },
@@ -140,8 +143,10 @@ const updateVideo = asyncHandler(async (req, res) => {
     if (video.owner.toString() !== req.user._id.toString()) {
         throw new apiError(403, "You are not allowed to update this video");
     }
+    let thumbnail;
+
     if (thumbnailLocalPath) {
-        const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+        thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
     }
 
     if (!thumbnail?.url || !thumbnail?.public_id) {
