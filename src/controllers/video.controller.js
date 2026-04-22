@@ -74,18 +74,16 @@ const publishAVideo = asynchandler(async (req, res) => {
     }
 
     // Check files
-    if (!req.files?.video || !req.files?.thumbnail) {
+    if (!req.files?.videoFile || !req.files?.thumbnail) {
         throw new apiError(400, "Video file and thumbnail are required");
     }
 
-    const videoLocalPath = req.files.video[0].path;
+    const videoLocalPath = req.files.videoFile[0].path;
     const thumbnailLocalPath = req.files.thumbnail[0].path;
 
     // Upload to cloudinary
     const uploadedVideo = await uploadToCloudinary(videoLocalPath);
     const uploadedThumbnail = await uploadToCloudinary(thumbnailLocalPath);
-    fs.unlinkSync(videoLocalPath);
-    fs.unlinkSync(thumbnailLocalPath);
 
     if (!uploadedVideo || !uploadedThumbnail) {
         throw new apiError(500, "Cloudinary upload failed");
@@ -131,6 +129,11 @@ const updateVideo = asynchandler(async (req, res) => {
     const { videoId } = req.params
     const { title, description } = req.body
     const thumbnailLocalPath = req.file?.path;
+    console.log(req.body);
+
+    if (!title && !description && !thumbnailLocalPath) {
+        throw new apiError(400, "Nothing to update");
+    }
 
     if (!videoId) {
         throw new apiError(400, "Video Id is requied")
@@ -176,6 +179,7 @@ const deleteVideo = asynchandler(async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new apiError(400, "Invalid video ID");
     }
+
     const video = await Video.findById(videoId);
 
     if (!video) {
@@ -187,23 +191,27 @@ const deleteVideo = asynchandler(async (req, res) => {
     }
 
     try {
+        // delete video file
         if (video.videoFile?.public_id) {
-            await deleteFromCloudinary(video.videoFile.public_id);
+            await deleteFromCloudinary(video.videoFile.public_id, "video");
         }
+
+        // delete thumbnail
         if (video.thumbnail?.public_id) {
-            await deleteFromCloudinary(video.thumbnail.public_id);
+            await deleteFromCloudinary(video.thumbnail.public_id, "image");
         }
+
     } catch (error) {
         throw new apiError(500, "Error deleting video from Cloudinary");
     }
 
-    // Delete the DB
     await video.deleteOne();
 
     return res.status(200).json(
         new apiResponse(200, null, "Video deleted successfully")
     );
-})
+});
+
 
 const togglePublishStatus = asynchandler(async (req, res) => {
     const { videoId } = req.params;

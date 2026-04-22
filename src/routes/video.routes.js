@@ -16,14 +16,14 @@ router.route("/getAll-videos").get(getAllVideos);
 router.route("/publish-video").post(
     verifyJWT,
     upload.fields([
-        { name: "video", maxCount: 1 },
+        { name: "videoFile", maxCount: 1 },
         { name: "thumbnail", maxCount: 1 }
     ]),
     publishAVideo
 );
 
 router.route("/video/:videoId").get(getVideoById);
-router.route("/video/:videoId").patch(verifyJWT, updateVideo);
+router.route("/video/:videoId").patch(verifyJWT, upload.single("thumbnail"), updateVideo);
 router.route("/video/:videoId").delete(verifyJWT, deleteVideo);
 router.route("/video/toggle-publish/:videoId").patch(verifyJWT, togglePublishStatus);
 export default router;

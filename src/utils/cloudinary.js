@@ -20,7 +20,8 @@ const uploadToCloudinary = async (localFilePath) => {
 
         return {
             url: response.secure_url,
-            public_id: response.public_id
+            public_id: response.public_id,
+            duration: response.duration || 0
         }
     } catch (error) {
         if (localFilePath && fs.existsSync(localFilePath)) {
@@ -31,15 +32,18 @@ const uploadToCloudinary = async (localFilePath) => {
     }
 }
 
-const deleteFromCloudinary = async (publicId) => {
+const deleteFromCloudinary = async (publicId, type = "image") => {
     try {
-        if (!publicId) return;
+        if (!publicId) return null;
 
-        await cloudinary.uploader.destroy(publicId, {
-            resource_type: "auto"
+        const result = await cloudinary.uploader.destroy(publicId, {
+            resource_type: type
         });
+
+        return result;
     } catch (error) {
         console.error("Cloudinary delete error:", error);
+        return null;
     }
 };
 
