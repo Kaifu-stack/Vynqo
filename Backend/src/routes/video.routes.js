@@ -5,7 +5,8 @@ import {
     getVideoById,
     updateVideo,
     deleteVideo,
-    togglePublishStatus
+    togglePublishStatus,
+    getMyVideos
 } from "../controllers/video.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
@@ -26,4 +27,5 @@ router.route("/video/:videoId").get(getVideoById);
 router.route("/video/:videoId").patch(verifyJWT, upload.single("thumbnail"), updateVideo);
 router.route("/video/:videoId").delete(verifyJWT, deleteVideo);
 router.route("/video/toggle-publish/:videoId").patch(verifyJWT, togglePublishStatus);
+router.get("/my-videos", verifyJWT, getMyVideos);
 export default router;

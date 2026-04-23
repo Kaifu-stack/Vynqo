@@ -84,7 +84,7 @@ const publishAVideo = asynchandler(async (req, res) => {
     console.log("VIDEO PATH:", videoLocalPath);
     console.log("THUMB PATH:", thumbnailLocalPath);
 
-    // 🔥 IMPORTANT FIX HERE
+    // IMPORTANT FIX HERE
     const uploadedVideo = await uploadToCloudinary(videoLocalPath, "video");
     const uploadedThumbnail = await uploadToCloudinary(thumbnailLocalPath, "image");
 
@@ -247,6 +247,14 @@ const togglePublishStatus = asynchandler(async (req, res) => {
         new apiResponse(200, video, "Video publish status toggled successfully")
     );
 })
+const getMyVideos = async (req, res) => {
+    const videos = await Video.aggregate([
+        { $match: { owner: req.user._id } },
+        { $sort: { createdAt: -1 } }
+    ]);
+
+    res.json({ success: true, data: videos });
+};
 
 export {
     getAllVideos,
@@ -254,5 +262,6 @@ export {
     getVideoById,
     updateVideo,
     deleteVideo,
-    togglePublishStatus
+    togglePublishStatus,
+    getMyVideos
 }

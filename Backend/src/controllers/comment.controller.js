@@ -8,22 +8,34 @@ const getVideoComments = asynchandler(async (req, res) => {
     const { videoId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+    console.log("VIDEO ID:", videoId); // 🔍 debug
+
+    if (!videoId || !mongoose.Types.ObjectId.isValid(videoId)) {
         throw new apiError(400, "Invalid Video ID");
     }
 
     const pageNumber = Math.max(parseInt(page) || 1, 1);
-    const limitNumber = Math.min(Math.max(parseInt(limit) || 10, 1), 50); // limit cap
+    const limitNumber = Math.min(Math.max(parseInt(limit) || 10, 1), 50);
 
     const skip = (pageNumber - 1) * limitNumber;
 
-    const comments = await Comment.find({ video: videoId })
-        .populate("owner", "username avatar")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNumber)
-        .lean();
+    let comments = [];
+
+    try {
+        comments = await Comment.find({ video: videoId })
+            .populate({
+                path: "owner",
+                select: "username avatar",
+                options: { strictPopulate: false } // 🔥 prevents crash
+            })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limitNumber)
+            .lean();
+    } catch (err) {
+        console.error("POPULATE ERROR:", err);
+        throw new apiError(500, "Error fetching comments");
+    }
 
     const totalComments = await Comment.countDocuments({ video: videoId });
 
@@ -40,7 +52,6 @@ const getVideoComments = asynchandler(async (req, res) => {
         )
     );
 });
-
 const addComment = asynchandler(async (req, res) => {
     const { videoId } = req.params;
     const { content } = req.body;
@@ -59,7 +70,7 @@ const addComment = asynchandler(async (req, res) => {
         owner: req.user._id,
     });
 
-    // 🔥 populate before sending (important for frontend)
+    //  populate before sending (important for frontend)
     const populatedComment = await Comment.findById(comment._id).populate(
         "owner",
         "username avatar"
