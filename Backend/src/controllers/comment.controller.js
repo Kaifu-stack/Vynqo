@@ -5,7 +5,6 @@ import { apiResponse } from "../utils/apiResponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 
 const getVideoComments = asynchandler(async (req, res) => {
-
     const { videoId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
@@ -14,8 +13,8 @@ const getVideoComments = asynchandler(async (req, res) => {
         throw new apiError(400, "Invalid Video ID");
     }
 
-    const pageNumber = parseInt(page);
-    const limitNumber = parseInt(limit);
+    const pageNumber = Math.max(parseInt(page) || 1, 1);
+    const limitNumber = Math.min(Math.max(parseInt(limit) || 10, 1), 50); // limit cap
 
     const skip = (pageNumber - 1) * limitNumber;
 
@@ -23,22 +22,26 @@ const getVideoComments = asynchandler(async (req, res) => {
         .populate("owner", "username avatar")
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limitNumber);
+        .limit(limitNumber)
+        .lean();
 
     const totalComments = await Comment.countDocuments({ video: videoId });
 
     return res.status(200).json(
-        new apiResponse(200, {
-            comments,
-            totalComments,
-            currentPage: pageNumber,
-            totalPages: Math.ceil(totalComments / limitNumber)
-        }, "Comments fetched successfully")
+        new apiResponse(
+            200,
+            {
+                comments,
+                totalComments,
+                currentPage: pageNumber,
+                totalPages: Math.ceil(totalComments / limitNumber),
+            },
+            "Comments fetched successfully"
+        )
     );
 });
 
 const addComment = asynchandler(async (req, res) => {
-
     const { videoId } = req.params;
     const { content } = req.body;
 
@@ -51,18 +54,23 @@ const addComment = asynchandler(async (req, res) => {
     }
 
     const comment = await Comment.create({
-        content,
+        content: content.trim(), //  trim input
         video: videoId,
-        owner: req.user._id
+        owner: req.user._id,
     });
 
+    // 🔥 populate before sending (important for frontend)
+    const populatedComment = await Comment.findById(comment._id).populate(
+        "owner",
+        "username avatar"
+    );
+
     return res.status(201).json(
-        new apiResponse(201, comment, "Comment added successfully")
+        new apiResponse(201, populatedComment, "Comment added successfully")
     );
 });
 
 const updateComment = asynchandler(async (req, res) => {
-
     const { commentId } = req.params;
     const { content } = req.body;
 
@@ -80,12 +88,12 @@ const updateComment = asynchandler(async (req, res) => {
         throw new apiError(404, "Comment not found");
     }
 
-    //Only owner can update their comment
+    // Only owner can update
     if (comment.owner.toString() !== req.user._id.toString()) {
         throw new apiError(403, "You are not authorized to update this comment");
     }
 
-    comment.content = content;
+    comment.content = content.trim(); //  trim
     await comment.save();
 
     return res.status(200).json(
@@ -94,7 +102,6 @@ const updateComment = asynchandler(async (req, res) => {
 });
 
 const deleteComment = asynchandler(async (req, res) => {
-
     const { commentId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(commentId)) {
@@ -106,6 +113,7 @@ const deleteComment = asynchandler(async (req, res) => {
     if (!comment) {
         throw new apiError(404, "Comment not found");
     }
+
     if (comment.owner.toString() !== req.user._id.toString()) {
         throw new apiError(403, "You are not authorized to delete this comment");
     }
@@ -116,9 +124,10 @@ const deleteComment = asynchandler(async (req, res) => {
         new apiResponse(200, {}, "Comment deleted successfully")
     );
 });
+
 export {
     getVideoComments,
     addComment,
     updateComment,
-    deleteComment
+    deleteComment,
 };

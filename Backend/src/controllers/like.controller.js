@@ -5,7 +5,6 @@ import { apiResponse } from "../utils/apiResponse.js"
 import { asynchandler } from "../utils/asynchandler.js"
 
 const toggleVideoLike = asynchandler(async (req, res) => {
-
     const { videoId } = req.params;
 
     if (!isValidObjectId(videoId)) {
@@ -17,24 +16,25 @@ const toggleVideoLike = asynchandler(async (req, res) => {
         likedBy: req.user._id
     });
 
+    let liked;
+
     if (existingLike) {
-
         await existingLike.deleteOne();
-
-        return res.status(200).json(
-            new apiResponse(200, {}, "Video unliked")
-        );
+        liked = false;
+    } else {
+        await Like.create({
+            video: videoId,
+            likedBy: req.user._id
+        });
+        liked = true;
     }
 
-    const like = await Like.create({
-        video: videoId,
-        likedBy: req.user._id
-    });
+    // RETURN COUNT (CRITICAL FIX)
+    const likesCount = await Like.countDocuments({ video: videoId });
 
     return res.status(200).json(
-        new apiResponse(200, like, "Video liked successfully")
+        new apiResponse(200, { liked, likesCount }, "Toggled")
     );
-
 });
 
 const toggleCommentLike = asynchandler(async (req, res) => {
