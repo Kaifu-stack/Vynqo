@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { motion } from "framer-motion";
 
-/* ✅ FIXED Field Component with Eye Toggle */
 const Field = ({ label, name, type = "text", value, onChange, error }) => {
     const [show, setShow] = useState(false);
     const isPassword = type === "password";
