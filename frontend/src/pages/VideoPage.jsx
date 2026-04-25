@@ -65,7 +65,31 @@ export default function VideoPage() {
             </div>
         );
     }
+    const handleAddToPlaylist = async () => {
+        try {
+            // 🔥 get user playlists
+            const res = await api.get("/playlists/me");
+            const playlists = res.data.data;
 
+            if (playlists.length === 0) {
+                alert("No playlist found. Create one first.");
+                return;
+            }
+
+            // 🔥 for now: pick first playlist
+            const playlistId = playlists[0]._id;
+
+            await api.post(
+                `/playlists/${playlistId}/videos/${video._id}`
+            );
+
+            alert("Added to playlist ✅");
+
+        } catch (err) {
+            console.error(err.response?.data || err);
+            alert("Failed to add");
+        }
+    };
     return (
         <div className="max-w-4xl mx-auto">
 
@@ -129,11 +153,17 @@ export default function VideoPage() {
                         {video?.owner?.username || "Unknown"}
                     </p>
                 </div>
-
+                <button
+                    onClick={handleAddToPlaylist}
+                    className="px-4 py-2 bg-orange-500 text-white rounded-xl text-sm hover:bg-orange-400"
+                >
+                    + Save to Playlist
+                </button>
                 <SubscribeButton
                     channelId={video?.owner?._id}
                     initialSubscribed={subscribed}
                 />
+
             </div>
 
             {/*  DESCRIPTION */}

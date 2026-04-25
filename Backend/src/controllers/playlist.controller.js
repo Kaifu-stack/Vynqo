@@ -44,16 +44,21 @@ const getUserPlaylists = asynchandler(async (req, res) => {
         new apiResponse(200, playlists, "User playlists fetched")
     );
 });
-
 const getPlaylistById = asynchandler(async (req, res) => {
     const { playlistId } = req.params;
 
     if (!isValidObjectId(playlistId)) {
-        throw new apiError(400, "Invalid playlistId");
+        throw new apiError(400, "Invalid playlist ID");
     }
 
     const playlist = await Playlist.findById(playlistId)
-        .populate("videos", "title thumbnail duration views owner");
+        .populate({
+            path: "videos",
+            populate: {
+                path: "owner",
+                select: "username avatar"
+            }
+        });
 
     if (!playlist) {
         throw new apiError(404, "Playlist not found");
@@ -63,7 +68,6 @@ const getPlaylistById = asynchandler(async (req, res) => {
         new apiResponse(200, playlist, "Playlist fetched successfully")
     );
 });
-
 const addVideoToPlaylist = asynchandler(async (req, res) => {
     const { playlistId, videoId } = req.params;
 
@@ -77,24 +81,35 @@ const addVideoToPlaylist = asynchandler(async (req, res) => {
         throw new apiError(404, "Playlist not found");
     }
 
-    // Ownership check 
     if (playlist.owner.toString() !== req.user._id.toString()) {
         throw new apiError(403, "Unauthorized");
     }
 
-    // Prevent duplicates 
-    if (playlist.videos.includes(videoId)) {
-        throw new apiError(400, "Video already in playlist");
+    const alreadyExists = playlist.videos.some(
+        (vid) => vid.toString() === videoId
+    );
+
+    if (alreadyExists) {
+        return res.status(200).json(
+            new apiResponse(200, playlist, "Video already in playlist")
+        );
     }
 
     playlist.videos.push(videoId);
     await playlist.save();
+    const updatedPlaylist = await Playlist.findById(playlist._id)
+        .populate({
+            path: "videos",
+            populate: {
+                path: "owner",
+                select: "username avatar"
+            }
+        });
 
     return res.status(200).json(
-        new apiResponse(200, playlist, "Video added to playlist")
+        new apiResponse(200, updatedPlaylist, "Video added to playlist")
     );
 });
-
 const removeVideoFromPlaylist = asynchandler(async (req, res) => {
     const { playlistId, videoId } = req.params;
 

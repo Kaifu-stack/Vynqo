@@ -1,6 +1,13 @@
+import { useNavigate } from "react-router-dom";
+
 export default function PlaylistCard({ playlist }) {
+    const navigate = useNavigate();
+
     return (
-        <div className="bg-[#111117] border border-white/5 rounded-2xl p-4 hover:border-orange-500/30 hover:shadow-md hover:shadow-orange-500/10 transition-all duration-300 cursor-pointer group">
+        <div
+            onClick={() => navigate(`/playlist/${playlist._id}`)} // 🔥 ADD THIS
+            className="bg-[#111117] border border-white/5 rounded-2xl p-4 hover:border-orange-500/30 hover:shadow-md hover:shadow-orange-500/10 transition-all duration-300 cursor-pointer group"
+        >
 
             {/* Thumbnail */}
             <div className="w-full h-28 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-3 relative overflow-hidden">
@@ -18,7 +25,8 @@ export default function PlaylistCard({ playlist }) {
                     <polyline points="17 2 12 7 7 2" />
                 </svg>
 
-                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded">
+                {/* ⚠️ IMPORTANT FIX */}
+                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none">
                     {playlist.videos?.length || 0} videos
                 </div>
             </div>

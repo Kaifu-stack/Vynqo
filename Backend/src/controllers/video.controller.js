@@ -270,24 +270,29 @@ const togglePublishStatus = asynchandler(async (req, res) => {
         new apiResponse(200, video, "Video publish status toggled successfully")
     );
 })
-const getMyVideos = async (req, res) => {
-    try {
-        const videos = await Video.find({ owner: req.user._id })
-            .populate("owner", "username avatar")
-            .sort({ createdAt: -1 });
 
-        res.status(200).json({
-            success: true,
-            data: videos
-        });
+const getMyVideos = asynchandler(async (req, res) => {
+    const videos = await Video.find({ owner: req.user._id })
+        .populate("owner", "username avatar")
+        .sort({ createdAt: -1 });
 
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-};
+    const videosWithLikes = await Promise.all(
+        videos.map(async (video) => {
+            const likesCount = await Like.countDocuments({
+                video: video._id
+            });
+
+            return {
+                ...video._doc,
+                totalLikes: likesCount
+            };
+        })
+    );
+
+    return res.status(200).json(
+        new apiResponse(200, videosWithLikes, "Videos fetched")
+    );
+});
 
 export {
     getAllVideos,

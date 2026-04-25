@@ -12,8 +12,9 @@ import ProfilePage from "./pages/ProfilePage";
 import EditProfile from "./pages/EditProfile";
 import EditVideo from "./pages/EditVideo";
 import Tweets from "./pages/Tweets";
-
+import PlaylistCard from "./components/playlist/PlaylistCard";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import PlaylistPage from "./pages/PlaylistPage";
 
 /* Page Animation Wrapper */
 function PageWrapper({ children }) {
@@ -47,7 +48,8 @@ function AnimatedRoutes() {
           }
         />
 
-        {/* Public routes WITH layout */}
+        {/* ================= PUBLIC WITH LAYOUT ================= */}
+
         <Route element={<MainLayout />}>
 
           <Route
@@ -108,6 +110,15 @@ function AnimatedRoutes() {
           />
 
           <Route
+            path="/playlist/:playlistId"
+            element={
+              <PageWrapper>
+                <PlaylistPage />
+              </PageWrapper>
+            }
+          />
+
+          <Route
             path="/upload"
             element={
               <PageWrapper>
@@ -134,7 +145,6 @@ function AnimatedRoutes() {
             }
           />
 
-          {/* TWEETS PAGE */}
           <Route
             path="/tweets"
             element={
