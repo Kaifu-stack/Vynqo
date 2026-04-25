@@ -41,7 +41,7 @@ export default function Navbar() {
     const handleSearch = (e) => {
         e.preventDefault();
         if (!query.trim()) return;
-        navigate(`/?search=${query}`);
+        navigate(`/?query=${query}`);
         setQuery("");
     };
 

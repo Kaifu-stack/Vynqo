@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../api/axios";
 import VideoCard from "../components/video/VideoCard";
 import VideoCardSkeleton from "../components/skeleton/VideoCardSkeleton";
@@ -12,7 +13,18 @@ export default function Home() {
 
     const observer = useRef();
 
-    /*  Fetch videos */
+    //  GET SEARCH QUERY
+    const [searchParams] = useSearchParams();
+    const query = searchParams.get("query") || "";
+
+    /*  RESET WHEN SEARCH CHANGES */
+    useEffect(() => {
+        setVideos([]);
+        setPage(1);
+        setHasMore(true);
+    }, [query]);
+
+    /*  FETCH VIDEOS */
     const fetchVideos = async (pageNum) => {
         if (isFetching.current) return;
 
@@ -20,20 +32,23 @@ export default function Home() {
             isFetching.current = true;
             setLoading(true);
 
-            const res = await api.get(`/videos?page=${pageNum}&limit=8`);
+            const res = await api.get(
+                `/videos?page=${pageNum}&limit=8&query=${query}`
+            );
 
             const newVideos = res.data.data.docs;
 
             setVideos((prev) => {
-                const existingIds = new Set(prev.map(v => v._id));
-                const filtered = newVideos.filter(v => !existingIds.has(v._id));
+                const existingIds = new Set(prev.map((v) => v._id));
+                const filtered = newVideos.filter(
+                    (v) => !existingIds.has(v._id)
+                );
                 return [...prev, ...filtered];
             });
 
             if (pageNum >= res.data.data.totalPages) {
                 setHasMore(false);
             }
-
         } catch (err) {
             console.error(err);
         } finally {
@@ -41,11 +56,13 @@ export default function Home() {
             isFetching.current = false;
         }
     };
+
+    /*  FETCH TRIGGER */
     useEffect(() => {
         fetchVideos(page);
-    }, [page]);
+    }, [page, query]);
 
-    /* Infinite scroll trigger */
+    /* ♾️ INFINITE SCROLL */
     const lastVideoRef = useCallback(
         (node) => {
             if (loading) return;
@@ -62,21 +79,21 @@ export default function Home() {
         [loading, hasMore]
     );
 
-    /* 🎬 UI */
     return (
         <div className="max-w-7xl mx-auto animate-fadeIn">
 
-            {/* Header */}
+            {/* HEADER */}
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-white/90 font-semibold text-base">
-                    Recommended for you
+                    {query ? `Results for "${query}"` : "Recommended for you"}
                 </h2>
+
                 <span className="text-white/30 text-xs">
                     {videos.length} videos
                 </span>
             </div>
 
-            {/* Grid */}
+            {/*  GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {videos.map((v, index) => {
                     if (videos.length === index + 1) {
@@ -90,7 +107,7 @@ export default function Home() {
                 })}
             </div>
 
-            {/* Loading more skeleton */}
+            {/*  LOADING */}
             {loading && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
                     {Array.from({ length: 4 }).map((_, i) => (
@@ -99,8 +116,15 @@ export default function Home() {
                 </div>
             )}
 
-            {/* End message */}
-            {!hasMore && (
+            {/*  NO RESULTS */}
+            {!loading && videos.length === 0 && query && (
+                <p className="text-center text-white/40 mt-10">
+                    No results found for "{query}"
+                </p>
+            )}
+
+            {/* 🎉 END */}
+            {!hasMore && videos.length > 0 && (
                 <p className="text-center text-white/30 text-sm mt-6">
                     You’ve reached the end 🎉
                 </p>

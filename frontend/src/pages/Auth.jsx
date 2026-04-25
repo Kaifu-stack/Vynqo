@@ -3,26 +3,102 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { motion } from "framer-motion";
 
+/* ✅ FIXED Field Component with Eye Toggle */
+const Field = ({ label, name, type = "text", value, onChange, error }) => {
+    const [show, setShow] = useState(false);
+    const isPassword = type === "password";
+
+    return (
+        <div className="mb-4 relative">
+            <label className="text-[11px] text-white/40 mb-1 block uppercase tracking-wide">
+                {label}
+            </label>
+
+            <input
+                name={name}
+                type={isPassword && show ? "text" : type}
+                value={value}
+                onChange={onChange}
+                className={`w-full px-4 py-2.5 rounded-xl bg-[#0f1115] border text-sm text-white pr-10 outline-none transition
+                ${error ? "border-red-500" : "border-white/10 focus:border-orange-500/60"}`}
+            />
+
+            {/* 👁️ Eye Toggle */}
+            {isPassword && (
+                <button
+                    type="button"
+                    onClick={() => setShow(prev => !prev)}
+                    className="absolute right-3 top-9 text-white/40 hover:text-white"
+                >
+                    {show ? "🙈" : "👁️"}
+                </button>
+            )}
+
+            {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+        </div>
+    );
+};
+
 export default function Auth() {
     const navigate = useNavigate();
 
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
-    const [msg, setMsg] = useState(null);
+
     const [form, setForm] = useState({
         fullName: "",
         username: "",
         email: "",
-        password: ""
+        password: "",
     });
 
-    const handleChange = (e) =>
-        setForm({ ...form, [e.target.name]: e.target.value });
+    const [errors, setErrors] = useState({});
+    const [toast, setToast] = useState(null);
 
+    /* Handle Input */
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        setForm((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+
+        setErrors((prev) => ({
+            ...prev,
+            [name]: "",
+        }));
+    };
+
+    /* Validation */
+    const validate = () => {
+        let newErrors = {};
+
+        if (!form.email.includes("@")) newErrors.email = "Invalid email";
+        if (form.password.length < 6)
+            newErrors.password = "Min 6 characters required";
+
+        if (!isLogin) {
+            if (!form.username) newErrors.username = "Username required";
+            if (!form.fullName) newErrors.fullName = "Full name required";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    /* Toast */
+    const showToast = (text, ok = true) => {
+        setToast({ text, ok });
+        setTimeout(() => setToast(null), 2500);
+    };
+
+    /* Submit */
     const handleSubmit = async () => {
+        if (!validate()) return;
+
         try {
             setLoading(true);
-            setMsg(null);
 
             if (isLogin) {
                 const res = await api.post("/users/login", {
@@ -33,69 +109,52 @@ export default function Auth() {
                 localStorage.setItem("token", res.data.data.accessToken);
                 localStorage.setItem("user", JSON.stringify(res.data.data.user));
 
-                setMsg({ text: "Signed in! Redirecting…", ok: true });
+                showToast("Login successful 🚀");
                 setTimeout(() => navigate("/"), 1000);
             } else {
-                await api.post("/users/register", {
-                    username: form.username,
-                    email: form.email,
-                    password: form.password,
-                    fullName: form.fullName,
-                });
+                await api.post("/users/register", form);
 
-                setMsg({ text: "Account created! Please sign in.", ok: true });
-                setTimeout(() => setIsLogin(true), 1200);
+                showToast("Account created 🎉");
+                setIsLogin(true);
             }
         } catch (err) {
-            setMsg({
-                text: err.response?.data?.message || "Something went wrong",
-                ok: false,
-            });
+            showToast(
+                err.response?.data?.message || "Something went wrong",
+                false
+            );
         } finally {
             setLoading(false);
         }
     };
 
-    const Field = ({ label, name, type = "text", placeholder }) => (
-        <div className="mb-3">
-            <label className="text-[11px] text-white/40 mb-1 block uppercase tracking-wide">
-                {label}
-            </label>
-            <input
-                name={name}
-                type={type}
-                placeholder={placeholder}
-                value={form[name]}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#0f1115] border border-white/10 text-sm text-white placeholder-white/30 outline-none focus:border-orange-500/60 transition"
-            />
-        </div>
-    );
-
     return (
         <div className="min-h-screen bg-[#0f1115] flex items-center justify-center p-6 relative overflow-hidden">
 
-            {/* Glow */}
-            <div className="absolute w-96 h-96 bg-orange-500 blur-[140px] opacity-[0.03] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+            {/* Toast */}
+            {toast && (
+                <div className={`fixed top-6 right-6 px-4 py-2 rounded-xl text-sm shadow-lg
+                ${toast.ok ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
+                    {toast.text}
+                </div>
+            )}
 
-            {/* Animated Card */}
+            {/* Glow */}
+            <div className="absolute w-96 h-96 bg-orange-500 blur-[140px] opacity-[0.03] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+
             <motion.div
                 initial={{ opacity: 0, y: 40, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
+                transition={{ duration: 0.5 }}
                 className="w-full max-w-5xl backdrop-blur-xl bg-white/3 border border-white/10 rounded-3xl shadow-2xl flex overflow-hidden"
             >
 
                 {/* LEFT */}
                 <div className="hidden lg:flex flex-col justify-between flex-1 p-12 border-r border-white/10">
-
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white font-bold">
                             V
                         </div>
-                        <span className="text-white text-xl font-semibold">
-                            Vynqo
-                        </span>
+                        <span className="text-white text-xl font-semibold">Vynqo</span>
                     </div>
 
                     <div>
@@ -109,9 +168,7 @@ export default function Auth() {
                         </p>
                     </div>
 
-                    <p className="text-white/25 text-xs">
-                        Join creators worldwide
-                    </p>
+                    <p className="text-white/25 text-xs">Join creators worldwide</p>
                 </div>
 
                 {/* RIGHT */}
@@ -129,60 +186,42 @@ export default function Auth() {
                     <div className="flex bg-white/5 rounded-xl p-1 mb-6">
                         <button
                             onClick={() => setIsLogin(true)}
-                            className={`flex-1 py-2 rounded-lg text-sm ${isLogin ? "bg-white/10 text-white" : "text-white/40"
-                                }`}
+                            className={`flex-1 py-2 rounded-lg text-sm ${isLogin ? "bg-white/10 text-white" : "text-white/40"}`}
                         >
                             Sign in
                         </button>
 
                         <button
                             onClick={() => setIsLogin(false)}
-                            className={`flex-1 py-2 rounded-lg text-sm ${!isLogin ? "bg-white/10 text-white" : "text-white/40"
-                                }`}
+                            className={`flex-1 py-2 rounded-lg text-sm ${!isLogin ? "bg-white/10 text-white" : "text-white/40"}`}
                         >
                             Create account
                         </button>
                     </div>
 
-                    {/* Alert */}
-                    {msg && (
-                        <div className={`text-xs px-3 py-2 rounded mb-4 ${msg.ok
-                            ? "bg-green-500/10 text-green-400"
-                            : "bg-red-500/10 text-red-400"
-                            }`}>
-                            {msg.text}
-                        </div>
-                    )}
-
                     {/* Fields */}
                     {!isLogin && (
                         <>
-                            <Field label="Full name" name="fullName" />
-                            <Field label="Username" name="username" />
+                            <Field label="Full name" name="fullName" value={form.fullName} onChange={handleChange} error={errors.fullName} />
+                            <Field label="Username" name="username" value={form.username} onChange={handleChange} error={errors.username} />
                         </>
                     )}
 
-                    <Field label="Email" name="email" type="email" />
-                    <Field label="Password" name="password" type="password" />
+                    <Field label="Email" name="email" type="email" value={form.email} onChange={handleChange} error={errors.email} />
+                    <Field label="Password" name="password" type="password" value={form.password} onChange={handleChange} error={errors.password} />
 
                     {/* Button */}
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="mt-3 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white transition"
+                        className="mt-2 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white transition"
                     >
-                        {loading
-                            ? "Please wait…"
-                            : isLogin
-                                ? "Sign in"
-                                : "Create account"}
+                        {loading ? "Processing..." : isLogin ? "Sign in" : "Create account"}
                     </button>
 
                     {/* Footer */}
                     <p className="text-center text-xs text-white/30 mt-6">
-                        {isLogin
-                            ? "Don't have an account?"
-                            : "Already have an account?"}
+                        {isLogin ? "Don't have an account?" : "Already have an account?"}
                         <button
                             onClick={() => setIsLogin(!isLogin)}
                             className="text-orange-400 ml-1"
@@ -191,7 +230,6 @@ export default function Auth() {
                         </button>
                     </p>
                 </div>
-
             </motion.div>
         </div>
     );

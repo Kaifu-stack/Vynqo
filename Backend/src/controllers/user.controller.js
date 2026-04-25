@@ -6,6 +6,7 @@ import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { deleteFromCloudinary } from "../utils/cloudinary.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -22,72 +23,82 @@ const generateAccessAndRefreshTokens = async (userId) => {
     }
 }
 const registerUser = asynchandler(async (req, res) => {
-    // get user details from frontend
-    // validation - not empty
-    // check if user already exist : username,email
-    // check for images, cheack for avatar
-    // upload time to cloudinary, avatar
-    // create user object-- create entry in db
-    // remove password and refresh token field from response
-    // check for user creation
-    // return response
 
-    const { fullname, email, username, password } = req.body
-    // console.log("email: ", email);
+    const { fullName, email, username, password } = req.body;
 
+    //  Validate fields
     if (
-        [fullname, email, username, password].some((field) => field?.trim() === "")
+        [fullName, email, username, password].some(
+            (field) => !field || field.trim() === ""
+        )
     ) {
-        throw new apiError(400, "All field are required ")
+        throw new apiError(400, "All fields are required");
     }
 
+    //  Check existing user
     const existedUser = await User.findOne({
         $or: [{ username }, { email }]
-    })
+    });
+
     if (existedUser) {
-        throw new apiError(409, "username already exists !")
+        throw new apiError(409, "Username or Email already exists");
     }
 
-    const avatarLocalPath = req.files?.avatar[0]?.path
-    //const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
 
     let coverImageLocalPath;
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-        coverImageLocalPath = req.files.coverImage[0].path
-
+        coverImageLocalPath = req.files.coverImage[0].path;
     }
 
-    if (!avatarLocalPath) {
-        throw new apiError(400, "Avatar File is Required")
+    //  Avatar
+    let avatar = {
+        public_id: "default",
+        url: `https://ui-avatars.com/api/?name=${username}`
+    };
+
+    if (avatarLocalPath) {
+        const uploadedAvatar = await uploadToCloudinary(avatarLocalPath);
+
+        if (!uploadedAvatar) {
+            throw new apiError(400, "Avatar upload failed");
+        }
+
+        avatar = uploadedAvatar; // must contain public_id + url
     }
 
-    const avatar = await uploadToCloudinary(avatarLocalPath)
-    const coverImage = await uploadToCloudinary(coverImageLocalPath)
-
-    if (!avatar) {
-        throw new apiError(400, "Avatar Upload Failed")
+    // Cover Image (OPTIONAL)
+    let coverImage = null;
+    if (coverImageLocalPath) {
+        coverImage = await uploadToCloudinary(coverImageLocalPath);
     }
 
     const user = await User.create({
-        fullname,
-        avatar: avatar.url,
+        fullname: fullName,
+
+        avatar: {
+            public_id: avatar.public_id || "default",
+            url: avatar.url || `https://ui-avatars.com/api/?name=${username}`
+        },
+
         coverImage: coverImage?.url || "",
         email,
         password,
         username: username.toLowerCase()
-    })
-
+    });
+    //  Remove sensitive data
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
-    )
+    );
+
     if (!createdUser) {
-        throw new apiError(500, "Something went Wrong while Registering User")
+        throw new apiError(500, "Something went wrong while registering user");
     }
 
     return res.status(201).json(
-        new apiResponse(200, createdUser, "User Registered Suceesfully ")
-    )
-})
+        new apiResponse(200, createdUser, "User registered successfully")
+    );
+});
 const loginuser = asynchandler(async (req, res) => {
     // req body -> data 
     // username or email

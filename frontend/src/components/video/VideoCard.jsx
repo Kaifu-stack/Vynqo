@@ -2,42 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import api from "../../api/axios";
-import SubscribeButton from "../common/SubscribeButton";
 
 export default function VideoCard({ video, isOwner = false, onDelete }) {
     const navigate = useNavigate();
-
-    const [liked, setLiked] = useState(video?.isLiked || false);
-    const [likesCount, setLikesCount] = useState(video.totalLikes || 0);
-    const [loading, setLoading] = useState(false);
     const [deleting, setDeleting] = useState(false);
-
-    //  Like
-    const toggleLike = async (e) => {
-        e.stopPropagation();
-
-        const token = localStorage.getItem("token");
-        if (!token) {
-            navigate("/login");
-            return;
-        }
-
-        if (loading) return;
-
-        try {
-            setLoading(true);
-
-            const res = await api.post(`/likes/toggle/v/${video._id}`);
-
-            setLikesCount(res.data.data.likesCount);
-            setLiked(res.data.data.liked);
-
-        } catch (err) {
-            console.error("LIKE ERROR:", err.response?.data || err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // 🗑 Delete
     const handleDelete = async (e) => {
@@ -51,9 +19,7 @@ export default function VideoCard({ video, isOwner = false, onDelete }) {
 
             await api.delete(`/videos/video/${video._id}`);
 
-            // remove from UI
             onDelete && onDelete(video._id);
-
         } catch (err) {
             console.error(err);
             alert("Delete failed");
@@ -62,7 +28,7 @@ export default function VideoCard({ video, isOwner = false, onDelete }) {
         }
     };
 
-    //  Edit
+    // ✏️ Edit
     const handleEdit = (e) => {
         e.stopPropagation();
         navigate(`/edit-video/${video._id}`);
@@ -77,6 +43,7 @@ export default function VideoCard({ video, isOwner = false, onDelete }) {
             onClick={() => navigate(`/video/${video._id}`)}
             className="bg-[#111117] border border-white/5 rounded-2xl overflow-hidden cursor-pointer hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all group"
         >
+
             {/* Thumbnail */}
             <div className="relative overflow-hidden">
                 <img
@@ -99,7 +66,7 @@ export default function VideoCard({ video, isOwner = false, onDelete }) {
             {/* Content */}
             <div className="p-3 flex gap-3">
                 <img
-                    src={video.owner?.avatar || "https://via.placeholder.com/40"}
+                    src={video.owner?.avatar?.url || "https://via.placeholder.com/40"}
                     className="w-9 h-9 rounded-full object-cover border border-white/10"
                     alt="avatar"
                 />
@@ -117,55 +84,25 @@ export default function VideoCard({ video, isOwner = false, onDelete }) {
                         {video.views} views
                     </p>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 mt-3">
-
-                        {/* ❤️ Like */}
-                        <motion.button
-                            whileTap={{ scale: 0.85 }}
-                            onClick={toggleLike}
-                            disabled={loading}
-                            className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-lg transition border ${liked
-                                ? "bg-rose-500/20 border-rose-500/30 text-rose-300"
-                                : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10"
-                                }`}
-                        >
-                            <motion.span
-                                animate={{ scale: liked ? [1, 1.4, 1] : 1 }}
-                                transition={{ duration: 0.3 }}
+                    {/* OWNER ACTIONS */}
+                    {isOwner && (
+                        <div className="flex gap-2 mt-2">
+                            <button
+                                onClick={handleEdit}
+                                className="text-xs px-3 py-1 bg-white/10 rounded hover:bg-white/20"
                             >
-                                ❤️
-                            </motion.span>
-                            {likesCount}
-                        </motion.button>
+                                Edit
+                            </button>
 
-                        {/* Subscribe */}
-                        {!isOwner && (
-                            <div onClick={(e) => e.stopPropagation()}>
-                                <SubscribeButton channelId={video.owner} />
-                            </div>
-                        )}
-
-                        {/* OWNER ACTIONS */}
-                        {isOwner && (
-                            <>
-                                <button
-                                    onClick={handleEdit}
-                                    className="text-xs px-3 py-1 bg-white/10 rounded hover:bg-white/20"
-                                >
-                                    Edit
-                                </button>
-
-                                <button
-                                    onClick={handleDelete}
-                                    disabled={deleting}
-                                    className="text-xs px-3 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30"
-                                >
-                                    {deleting ? "Deleting..." : "Delete"}
-                                </button>
-                            </>
-                        )}
-                    </div>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleting}
+                                className="text-xs px-3 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30"
+                            >
+                                {deleting ? "Deleting..." : "Delete"}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </motion.div>
