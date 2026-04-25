@@ -38,7 +38,10 @@ const server = http.createServer(app);
 // SOCKET.IO SETUP
 const io = new Server(server, {
     cors: {
-        origin: "https://vynqo.vercel.app",
+        origin: [
+            "http://localhost:5173",
+            "https://vynqo.vercel.app"
+        ],
         credentials: true
     }
 });
