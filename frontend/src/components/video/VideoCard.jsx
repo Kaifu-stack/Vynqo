@@ -9,6 +9,18 @@ export default function VideoCard({ video, isOwner = false, onDelete }) {
 
     if (!video || !video._id) return null;
 
+    const handleNavigate = () => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            alert("Login to watch videos");
+            navigate("/login");
+            return;
+        }
+
+        navigate(`/video/${video._id}`);
+    };
+
     const handleDelete = async (e) => {
         e.stopPropagation();
 
@@ -38,11 +50,11 @@ export default function VideoCard({ video, isOwner = false, onDelete }) {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -6, scale: 1.02 }}
             transition={{ duration: 0.35 }}
-            onClick={() => navigate(`/video/${video._id}`)}
+            onClick={handleNavigate}
             className="bg-[#111117] border border-white/5 rounded-2xl overflow-hidden cursor-pointer hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all group"
         >
 
-            {/* 🎥 Thumbnail */}
+            {/* Thumbnail */}
             <div className="relative overflow-hidden">
                 <img
                     src={
@@ -66,6 +78,7 @@ export default function VideoCard({ video, isOwner = false, onDelete }) {
                         : "--"}
                 </div>
             </div>
+
 
             <div className="p-3 flex gap-3">
                 <img
