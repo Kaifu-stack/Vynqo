@@ -14,7 +14,6 @@ export default function Dashboard() {
     });
     const [loading, setLoading] = useState(true);
 
-    //  Fetch dashboard data
     const fetchDashboard = async () => {
         try {
             setLoading(true);
@@ -24,9 +23,19 @@ export default function Dashboard() {
                 api.get("/videos/my-videos"),
             ]);
 
-            const vids = videoRes.data.data || [];
+            const userData = userRes?.data?.data || {};
+            const vids = videoRes?.data?.data || [];
 
-            setUser(userRes.data.data);
+
+            const normalizedUser = {
+                ...userData,
+                avatar:
+                    userData?.avatar?.url ||
+                    userData?.avatar ||
+                    "https://via.placeholder.com/100",
+            };
+
+            setUser(normalizedUser);
             setVideos(vids);
 
             updateStats(vids);
@@ -40,17 +49,25 @@ export default function Dashboard() {
 
     //  Stats calculator
     const updateStats = (vids) => {
-        const totalViews = vids.reduce((sum, v) => sum + (v.views || 0), 0);
-        const totalLikes = vids.reduce((sum, v) => sum + (v.totalLikes || 0), 0);
+        const safeVids = vids || [];
+
+        const totalViews = safeVids.reduce(
+            (sum, v) => sum + (v?.views || 0),
+            0
+        );
+
+        const totalLikes = safeVids.reduce(
+            (sum, v) => sum + (v?.totalLikes || 0),
+            0
+        );
 
         setStats({
-            totalVideos: vids.length,
+            totalVideos: safeVids.length,
             totalViews,
             totalLikes,
         });
     };
 
-    //  Delete handler (UI sync)
     const handleDelete = (id) => {
         const updated = videos.filter((v) => v._id !== id);
         setVideos(updated);
@@ -66,18 +83,18 @@ export default function Dashboard() {
     return (
         <div className="max-w-7xl mx-auto space-y-8">
 
-            {/* USER HEADER */}
             <div className="flex items-center gap-4">
                 <img
-                    src={user?.avatar?.url || "https://via.placeholder.com/100"}
-                    className="w-14 h-14 rounded-full border border-white/10"
+                    src={user?.avatar}
+                    alt="avatar"
+                    className="w-14 h-14 rounded-full border border-white/10 object-cover"
                 />
                 <div>
                     <h1 className="text-white text-lg font-semibold">
-                        {user?.fullname}
+                        {user?.fullname || "User"}
                     </h1>
                     <p className="text-white/40 text-sm">
-                        @{user?.username}
+                        @{user?.username || "username"}
                     </p>
                 </div>
             </div>
@@ -89,7 +106,7 @@ export default function Dashboard() {
                 <StatCard title="Likes" value={stats.totalLikes} />
             </div>
 
-            {/* VIDEOS */}
+            {/*  VIDEOS */}
             <div>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-white font-semibold">
@@ -116,14 +133,16 @@ export default function Dashboard() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {videos.map((v) => (
-                            <VideoCard
-                                key={v._id}
-                                video={v}
-                                isOwner={true}
-                                onDelete={handleDelete}
-                            />
-                        ))}
+                        {videos
+                            .filter(v => v && v._id)
+                            .map((v) => (
+                                <VideoCard
+                                    key={v._id}
+                                    video={v}
+                                    isOwner={true}
+                                    onDelete={handleDelete}
+                                />
+                            ))}
                     </div>
                 )}
             </div>

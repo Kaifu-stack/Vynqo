@@ -11,8 +11,10 @@ export default function VideoPage() {
     const [video, setVideo] = useState(null);
     const [likes, setLikes] = useState(0);
     const [liked, setLiked] = useState(false);
+    const [subscribed, setSubscribed] = useState(false);
     const [viewAdded, setViewAdded] = useState(false);
 
+    //  FETCH VIDEO
     useEffect(() => {
         const fetchVideo = async () => {
             try {
@@ -22,6 +24,8 @@ export default function VideoPage() {
                 setVideo(data);
                 setLikes(data.totalLikes || 0);
                 setLiked(data.isLiked || false);
+                setSubscribed(data.isSubscribed || false);
+
             } catch (err) {
                 console.error(err);
             }
@@ -30,11 +34,10 @@ export default function VideoPage() {
         fetchVideo();
     }, [videoId]);
 
-    /*  Like */
+    //  LIKE
     const handleLike = async () => {
         const token = localStorage.getItem("token");
 
-        // Redirect if not logged in
         if (!token) {
             navigate("/login");
             return;
@@ -45,11 +48,13 @@ export default function VideoPage() {
 
             setLikes(res.data.data.likesCount);
             setLiked(res.data.data.liked);
+
         } catch (err) {
-            console.error("LIKE ERROR:", err.response?.data || err);
+            console.error(err);
         }
     };
 
+    //  LOADING
     if (!video) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -64,12 +69,12 @@ export default function VideoPage() {
     return (
         <div className="max-w-4xl mx-auto">
 
-            {/*  Video Player */}
-            <div className="rounded-2xl overflow-hidden border border-orange-800/20 shadow-xl shadow-black/40 mb-5">
+            {/* 🎥 VIDEO (FIXED) */}
+            <div className="rounded-2xl border border-orange-800/20 shadow-xl mb-5">
                 <video
-                    src={video.videoFile?.url}
+                    src={video?.videoFile?.url}
                     controls
-                    className="w-full aspect-video bg-black"
+                    className="w-full aspect-video bg-black relative z-10"
                     onPlay={async () => {
                         if (viewAdded) return;
 
@@ -83,78 +88,62 @@ export default function VideoPage() {
                 />
             </div>
 
-            {/*  Title */}
-            <h1 className="text-xl font-bold text-white tracking-tight mb-2">
-                {video.title}
+            {/*  TITLE */}
+            <h1 className="text-xl font-bold text-white mb-2">
+                {video?.title}
             </h1>
 
-            {/*  Meta */}
-            <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+            {/*  META */}
+            <div className="flex justify-between mb-4">
 
-                <div className="flex items-center gap-4">
-                    <span className="text-white/40 text-sm flex items-center gap-1.5">
-                        👁 {video.views} views
-                    </span>
-
-                    <span className="text-white/40 text-sm flex items-center gap-1.5">
-                        ❤️ {likes} likes
-                    </span>
+                <div className="flex gap-4 text-white/40 text-sm">
+                    <span>👁 {video?.views || 0}</span>
+                    <span>❤️ {likes}</span>
                 </div>
 
-                {/*  Like Button */}
+                {/* ❤️ LIKE BUTTON */}
                 <button
                     onClick={handleLike}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition border ${liked
-                        ? "bg-rose-500/20 border-rose-500/30 text-rose-300"
-                        : "bg-white/5 border-white/10 text-orange-300/50 hover:bg-orange-900/30 hover:text-orange-300"
+                    className={`px-4 py-2 rounded-xl text-sm transition ${liked
+                        ? "bg-rose-500/20 text-rose-300"
+                        : "bg-white/5 text-white/50 hover:bg-orange-900/30"
                         }`}
                 >
                     ❤️ {liked ? "Liked" : "Like"}
                 </button>
             </div>
 
-            {/* Divider */}
-            <div className="h-px bg-orange-800/15 mb-4" />
-
-            {/*  Channel */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+            {/*  CHANNEL */}
+            <div className="flex justify-between items-center mb-4">
+                <div className="flex gap-3 items-center">
                     <img
-                        src={video.owner?.avatar || "https://via.placeholder.com/40"}
+                        src={
+                            video?.owner?.avatar?.url ||
+                            video?.owner?.avatar ||
+                            "https://via.placeholder.com/40"
+                        }
                         className="w-10 h-10 rounded-full object-cover"
                         alt="avatar"
                     />
-
-                    <div>
-                        <p className="text-white/80 text-sm font-medium">
-                            {video.owner?.username || "Creator"}
-                        </p>
-                        <p className="text-orange-300/30 text-xs">
-                            @{video.owner?.username || "channel"}
-                        </p>
-                    </div>
-                </div>
-
-                <SubscribeButton channelId={video.owner} />
-            </div>
-
-            {/*  Description */}
-            {video.description && (
-                <div className="bg-orange-950/20 border border-orange-800/15 rounded-xl px-4 py-3 mb-5">
-                    <p className="text-orange-300/50 text-sm leading-relaxed">
-                        {video.description}
+                    <p className="text-white">
+                        {video?.owner?.username || "Unknown"}
                     </p>
                 </div>
-            )}
 
-            {/*  Comments */}
-            <div className="flex items-center gap-3 mb-4">
-                <div className="w-1 h-4 rounded-full bg-linear-to-b from-orange-400 to-rose-500" />
-                <h3 className="text-white/70 font-semibold text-sm">
-                    Comments
-                </h3>
+                <SubscribeButton
+                    channelId={video?.owner?._id}
+                    initialSubscribed={subscribed}
+                />
             </div>
 
+            {/*  DESCRIPTION */}
+            {video?.description && (
+                <p className="text-white/50 mb-4">
+                    {video.description}
+                </p>
+            )}
+
+            {/*  COMMENTS */}
             <CommentSection videoId={video._id} />
         </div>
     );

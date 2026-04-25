@@ -14,33 +14,46 @@ const toggleSubscription = asynchandler(async (req, res) => {
         throw new apiError(400, "Invalid channelId");
     }
 
+    if (!userId) {
+        throw new apiError(401, "Unauthorized");
+    }
+
     if (channelId === userId.toString()) {
         throw new apiError(400, "You cannot subscribe to yourself");
     }
 
-    // check if already subscribed
     const existingSub = await Subscription.findOne({
         subscriber: userId,
         channel: channelId
     });
 
+    //  UNSUBSCRIBE
     if (existingSub) {
-        // unsubscribe
         await existingSub.deleteOne();
 
+        const count = await Subscription.countDocuments({ channel: channelId });
+
         return res.status(200).json(
-            new apiResponse(200, { subscribed: false }, "Unsubscribed successfully")
+            new apiResponse(200, {
+                subscribed: false,
+                subscribersCount: count
+            }, "Unsubscribed successfully")
         );
     }
 
-    // subscribe
+    // SUBSCRIBE
     await Subscription.create({
         subscriber: userId,
         channel: channelId
     });
 
+    const count = await Subscription.countDocuments({ channel: channelId });
+
     return res.status(200).json(
-        new apiResponse(200, { subscribed: true }, "Subscribed successfully")
+        new apiResponse(200, {
+            subscribed: true,
+            subscribersCount: count
+        }, "Subscribed successfully")
     );
 });
 

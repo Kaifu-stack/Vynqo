@@ -12,7 +12,6 @@ export default function Navbar() {
 
     try {
         const storedUser = localStorage.getItem("user");
-
         if (storedUser && storedUser !== "undefined") {
             user = JSON.parse(storedUser);
         }
@@ -26,7 +25,6 @@ export default function Navbar() {
 
     const dropdownRef = useRef();
 
-    //  Close dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -92,6 +90,12 @@ export default function Navbar() {
                     Home
                 </Link>
 
+                {token && (
+                    <Link to="/tweets" className={navLink("/tweets")}>
+                        Tweets
+                    </Link>
+                )}
+
                 {/* Protected */}
                 {token && (
                     <>
@@ -122,7 +126,6 @@ export default function Navbar() {
                     </button>
                 ) : (
                     <div className="relative" ref={dropdownRef}>
-                        {/* Avatar */}
                         <img
                             src={
                                 user?.avatar?.url ||
@@ -132,16 +135,11 @@ export default function Navbar() {
                             className="w-8 h-8 rounded-full cursor-pointer border border-white/10 hover:scale-105 transition"
                         />
 
-                        {/* Dropdown */}
                         {open && (
                             <div className="absolute right-0 mt-2 w-44 bg-[#111117] border border-white/10 rounded-xl shadow-lg overflow-hidden animate-fadeIn">
 
                                 <button
                                     onClick={() => {
-                                        if (!user?.username) {
-                                            console.error("Username missing");
-                                            return;
-                                        }
                                         navigate(`/profile/${user.username}`);
                                         setOpen(false);
                                     }}

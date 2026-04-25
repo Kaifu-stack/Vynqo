@@ -74,35 +74,37 @@ const toggleTweetLike = asynchandler(async (req, res) => {
 
     const { tweetId } = req.params;
 
-    if (!isValidObjectId(tweetId)) {
-        throw new apiError(400, "Invalid Tweet ID");
-    }
-
     const existingLike = await Like.findOne({
         tweet: tweetId,
         likedBy: req.user._id
     });
 
+    let liked;
+
     if (existingLike) {
-
         await existingLike.deleteOne();
-
-        return res.status(200).json(
-            new apiResponse(200, {}, "Tweet unliked")
-        );
+        liked = false;
+    } else {
+        await Like.create({
+            tweet: tweetId,
+            likedBy: req.user._id
+        });
+        liked = true;
     }
 
-    const like = await Like.create({
-        tweet: tweetId,
-        likedBy: req.user._id
+    const likesCount = await Like.countDocuments({ tweet: tweetId });
+
+    //  REAL-TIME EMIT
+    global.io.emit("tweet-liked", {
+        tweetId,
+        likesCount
     });
 
-    return res.status(200).json(
-        new apiResponse(200, like, "Tweet liked successfully")
-    );
-
+    return res.json({
+        liked,
+        likesCount
+    });
 });
-
 const getLikedVideos = asynchandler(async (req, res) => {
 
     const likes = await Like.find({

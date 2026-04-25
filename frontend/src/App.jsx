@@ -11,10 +11,11 @@ import UploadVideo from "./pages/UploadVideo";
 import ProfilePage from "./pages/ProfilePage";
 import EditProfile from "./pages/EditProfile";
 import EditVideo from "./pages/EditVideo";
+import Tweets from "./pages/Tweets";
 
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
-/*  Page Animation Wrapper */
+/* Page Animation Wrapper */
 function PageWrapper({ children }) {
   return (
     <motion.div
@@ -133,9 +134,19 @@ function AnimatedRoutes() {
             }
           />
 
+          {/* TWEETS PAGE */}
+          <Route
+            path="/tweets"
+            element={
+              <PageWrapper>
+                <Tweets />
+              </PageWrapper>
+            }
+          />
+
         </Route>
 
-        {/*  FALLBACK ROUTE */}
+        {/* ================= FALLBACK ================= */}
         <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>

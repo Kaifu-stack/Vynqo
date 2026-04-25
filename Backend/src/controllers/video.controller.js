@@ -7,6 +7,7 @@ import { asynchandler } from "../utils/asynchandler.js"
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 import fs from "fs";
 import { Like } from "../models/like.model.js";
+import { Subscription } from "../models/subscription.model.js";
 
 const getAllVideos = asynchandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
@@ -84,7 +85,6 @@ const publishAVideo = asynchandler(async (req, res) => {
     console.log("VIDEO PATH:", videoLocalPath);
     console.log("THUMB PATH:", thumbnailLocalPath);
 
-    // IMPORTANT FIX HERE
     const uploadedVideo = await uploadToCloudinary(videoLocalPath, "video");
     const uploadedThumbnail = await uploadToCloudinary(thumbnailLocalPath, "image");
 
@@ -115,22 +115,45 @@ const publishAVideo = asynchandler(async (req, res) => {
 const getVideoById = asynchandler(async (req, res) => {
     const { videoId } = req.params;
 
-    if (!videoId) {
-        throw new apiError(400, "video Id is required");
-    }
-
-    const video = await Video.findByIdAndUpdate(
-        videoId,
-        { $inc: { views: 1 } },
-        { new: true }
-    ).populate("owner", "username avatar");
+    const video = await Video.findById(videoId)
+        .populate("owner", "username avatar");
 
     if (!video) {
-        throw new apiError(404, "video not found");
+        throw new apiError(404, "Video not found");
     }
 
+    // views
+    video.views += 1;
+    await video.save();
+
+    // likes count
     const likesCount = await Like.countDocuments({ video: videoId });
+
+    let isLiked = false;
+    let isSubscribed = false;
+
+    if (req.user?._id) {
+
+        //  LIKE CHECK
+        const like = await Like.findOne({
+            video: videoId,
+            likedBy: req.user._id
+        });
+
+        isLiked = !!like;
+
+        //  SUBSCRIBE CHECK
+        const sub = await Subscription.findOne({
+            channel: video.owner._id,
+            subscriber: req.user._id
+        });
+
+        isSubscribed = !!sub;
+    }
+
     video._doc.totalLikes = likesCount;
+    video._doc.isLiked = isLiked;
+    video._doc.isSubscribed = isSubscribed;
 
     return res.status(200).json(
         new apiResponse(200, video, "Video fetched successfully")
@@ -248,12 +271,22 @@ const togglePublishStatus = asynchandler(async (req, res) => {
     );
 })
 const getMyVideos = async (req, res) => {
-    const videos = await Video.aggregate([
-        { $match: { owner: req.user._id } },
-        { $sort: { createdAt: -1 } }
-    ]);
+    try {
+        const videos = await Video.find({ owner: req.user._id })
+            .populate("owner", "username avatar")
+            .sort({ createdAt: -1 });
 
-    res.json({ success: true, data: videos });
+        res.status(200).json({
+            success: true,
+            data: videos
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
 };
 
 export {
