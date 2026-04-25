@@ -8,15 +8,25 @@ export default function Navbar() {
 
     const token = localStorage.getItem("token");
 
-    //  Safe user parsing (prevents crash)
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    let user = null;
+
+    try {
+        const storedUser = localStorage.getItem("user");
+
+        if (storedUser && storedUser !== "undefined") {
+            user = JSON.parse(storedUser);
+        }
+    } catch (err) {
+        console.error("User parse error:", err);
+        user = null;
+    }
 
     const [query, setQuery] = useState("");
     const [open, setOpen] = useState(false);
 
     const dropdownRef = useRef();
 
-    // 🔥 Close dropdown on outside click
+    //  Close dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
