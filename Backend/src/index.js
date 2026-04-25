@@ -24,7 +24,11 @@ connnectDB()
 */
 
 import dotenv from 'dotenv';
-dotenv.config({ path: './.env' });
+import dotenv from "dotenv";
+
+if (process.env.NODE_ENV !== "production") {
+    dotenv.config({ path: "./.env" });
+}
 
 import connnectDB from './db/database.js';
 import { app } from './app.js';
