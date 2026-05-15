@@ -3,7 +3,8 @@
 A full-stack video sharing platform built with **React, Node.js, Express, and MongoDB**.
 It includes features like video upload, playlists, likes, subscriptions, tweets, and real-time updates.
 
----
+<p align="center"> <img src="https://img.shields.io/badge/MERN-Stack-blue?style=for-the-badge&logo=mongodb&logoColor=white" /> <img src="https://img.shields.io/badge/Frontend-React-blue?style=for-the-badge&logo=react" /> <img src="https://img.shields.io/badge/Backend-Node.js-green?style=for-the-badge&logo=node.js" /> <img src="https://img.shields.io/badge/Database-MongoDB-green?style=for-the-badge&logo=mongodb" /> <img src="https://img.shields.io/badge/Auth-JWT-orange?style=for-the-badge&logo=jsonwebtokens" /> <img src="https://img.shields.io/badge/RealTime-Socket.io-black?style=for-the-badge&logo=socket.io" /> </p> <p align="center"> <a href="https://vynqo.vercel.app"> <img src="https://img.shields.io/badge/Live-Demo-purple?style=for-the-badge&logo=vercel" /> </p>
+
 
 ##  Features
 
@@ -103,8 +104,8 @@ server/
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
+git clone https://github.com/Kaifu-stack/Vynqo.git
+cd Vynqo
 ```
 
 ### 2️⃣ Backend Setup
