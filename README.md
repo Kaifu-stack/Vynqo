@@ -212,7 +212,7 @@ npm run dev
 # 📜 MIT License
 
 MIT License
-Copyright (c) 2026 Kaif Alam
+Copyright (c) 2026 Md Kaif Alam
 
 ## 👨‍💻 Author
 
