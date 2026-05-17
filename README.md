@@ -209,6 +209,10 @@ npm run dev
 * Dark/light theme toggle
 
 ---
+# 📜 MIT License
+
+MIT License
+Copyright (c) 2026 Md Kaif Alam
 
 ## 👨‍💻 Author
 
