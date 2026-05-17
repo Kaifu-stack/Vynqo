@@ -12,9 +12,10 @@ import ProfilePage from "./pages/ProfilePage";
 import EditProfile from "./pages/EditProfile";
 import EditVideo from "./pages/EditVideo";
 import Tweets from "./pages/Tweets";
-import PlaylistCard from "./components/playlist/PlaylistCard";
-import ProtectedRoute from "./components/common/ProtectedRoute";
 import PlaylistPage from "./pages/PlaylistPage";
+import WakeupScreen from "./pages/WakeupScreen";
+
+import ProtectedRoute from "./components/common/ProtectedRoute";
 
 /* Page Animation Wrapper */
 function PageWrapper({ children }) {
@@ -36,6 +37,17 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+
+        {/* ================= WAKEUP SCREEN ================= */}
+
+        <Route
+          path="/welcome"
+          element={
+            <PageWrapper>
+              <WakeupScreen />
+            </PageWrapper>
+          }
+        />
 
         {/* ================= PUBLIC ROUTES ================= */}
 
@@ -157,7 +169,8 @@ function AnimatedRoutes() {
         </Route>
 
         {/* ================= FALLBACK ================= */}
-        <Route path="*" element={<Navigate to="/" />} />
+
+        <Route path="*" element={<Navigate to="/welcome" />} />
 
       </Routes>
     </AnimatePresence>

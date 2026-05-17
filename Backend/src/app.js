@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import healthRouter from "./routes/health.routes.js";
 
 const app = express();
 const allowedOrigins = [
@@ -48,7 +49,7 @@ app.use("/api/v1/playlists", playlistRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/replies", replyRoutes);
-
+app.use("/api/v1", healthRouter);
 // http://localhost:5000/api/v1/users/register
 
 export { app };
